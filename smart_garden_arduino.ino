@@ -35,10 +35,10 @@ void loop() {
 void startWatering() {
   if (percentageHumididy < 18) {
     //TODO: need to check if it's early morning or not to start watering.
-    if (temp < 20) {
+    if (temp <= 25 && (ldrValue <= 870 && ldrValue >= 743)) {
       timesToWater(2);
     }
-    else {
+    else if (temp > 25 && (ldrValue <= 870 && ldrValue >= 743)) {
       timesToWater(3);
     }
   }
@@ -51,7 +51,7 @@ void timesToWater(int number) {
   for (int i = 0; i < number; i++) {
     getSensorsValues();
     //turn led on/off
-    if (ldrValue <= 400) digitalWrite(ledPin, HIGH);
+    if (ldrValue >= 700) digitalWrite(ledPin, HIGH);
     else digitalWrite(ledPin, LOW);
 
     if ((percentageHumididy >= 18 && percentageHumididy <= 20) || percentageHumididy > 20) {
@@ -60,7 +60,7 @@ void timesToWater(int number) {
     digitalWrite(Water_Pump, HIGH);
     delay(0.5 * HOUR);
     digitalWrite(Water_Pump, LOW);
-    delay(8 * HOUR);
+    delay(4 * HOUR);
   }
 }
 
