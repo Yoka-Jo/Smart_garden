@@ -3,8 +3,8 @@
 #define lmSensor A1
 #define moistureSensor A2
 
-const unsigned long SECOND = 1000;
-const unsigned long HOUR = 3600 * SECOND;
+const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 3, d7 = 2;
+LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
 const int ledPin = 13;
 const int pumpPin = 10;
@@ -17,33 +17,45 @@ int temp = 0;
 int moistureValue = 0;
 int percentageHumididy = 0;
 
-const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 3, d7 = 2;
-LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
 void setup() {
-  Serial.begin(9600);
-  lcd.begin(16, 2);
-  pinMode(pumpPin, OUTPUT);
   pinMode(ledPin, OUTPUT);
+  pinMode(pumpPin, OUTPUT);
+  lcd.begin(16, 2);
+  startingLcd();
+}
+
+void startingLcd(){
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Time: ");
+  lcd.setCursor(0, 1);
+  lcd.print("Pump: ");
 }
 
 void loop() {
   getSensorsValues();
   turnLedOnOrOff();
+  getTime();
   startWatering();
 }
 
 void startWatering() {
   if (percentageHumididy < 18) {
-    //TODO: need to check if it's early morning or not to start watering.
-    if (temp <= 25 && (ldrValue <= 890 && ldrValue >= 743)) {
+    if (temp <= 25 && (ldrValue <= 890 && ldrValue >= 600)) {
+      pumpOn();
       timesToWater(2);
     }
-    else if (temp > 25 && (ldrValue <= 890 && ldrValue >= 743)) {
+    else if (temp > 25 && (ldrValue <= 890 && ldrValue >= 600)) {
+      pumpOn();
       timesToWater(3);
+    }
+    else {
+      pumpOff();
     }
   }
   else {
+    pumpOff();
     digitalWrite(pumpPin, LOW);
   }
 }
@@ -51,20 +63,27 @@ void startWatering() {
 void timesToWater(int number) {
   for (int i = 0; i < number; i++) {
     getSensorsValues();
+    getTime();
     //turn led on/off
     turnLedOnOrOff();
 
-    if ((percentageHumididy >= 18 && percentageHumididy <= 20) || percentageHumididy > 20) {
+   if (percentageHumididy > 18) {
+      getTime();
+      pumpOff();
       continue;
     }
-    digitalWrite(pumpPin, HIGH);
-    delay(0.5 * HOUR);
-    digitalWrite(pumpPin, LOW);
-    delay(4 * HOUR);
+    
+    pumpOn();
+    
+    
+    delay(2000);
+    
+    pumpOff();
+    delay(5000);
   }
 }
 
-
+// Sensors Values
 void getLdrValue() {
   ldrValue = analogRead(ldrSensor);
 }
@@ -78,6 +97,7 @@ void getTempValue() {
 void getHumidityValue() {
   moistureValue = analogRead(moistureSensor);
   percentageHumididy = map(moistureValue, wet, dry, 0, 100);
+  delay(100);
 }
 
 void getSensorsValues() {
@@ -86,6 +106,41 @@ void getSensorsValues() {
   getHumidityValue();
 }
 
-void turnLedOnOrOff(){
-  digitalWrite(ledPin, ldrValue >= 800 ? HIGH : LOW);
+void turnLedOnOrOff() {
+  if (ldrValue >= 800)
+  {
+    digitalWrite(ledPin, HIGH);
+  }
+
+  else {
+    digitalWrite(ledPin, LOW);
+  }
+}
+
+// Time
+void getTime() {
+  startingLcd();
+  lcd.setCursor(7 , 0);
+  if (ldrValue <= 400) {
+    lcd.print("Bright");
+  }
+  else if (ldrValue < 600) {
+    lcd.print("Light");
+  }
+  else if (ldrValue < 1023) {
+    lcd.print("Morning");
+  }
+}
+
+// Pump
+void pumpOn() {
+  digitalWrite(pumpPin, HIGH);
+  lcd.setCursor(7 , 1);
+  lcd.print(" ON");
+}
+
+void pumpOff() {
+  digitalWrite(pumpPin, LOW);
+  lcd.setCursor(7 , 1);
+  lcd.print("OFF");
 }
