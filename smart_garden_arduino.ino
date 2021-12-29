@@ -15,7 +15,7 @@ int lmValue = 0;
 float lmVoltage = 0;
 int temp = 0;
 int moistureValue = 0;
-int percentageHumididy = 0;
+int humidityPercentage = 0;
 
 
 void setup() {
@@ -25,7 +25,7 @@ void setup() {
   startingLcd();
 }
 
-void startingLcd(){
+void startingLcd() {
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("Time: ");
@@ -41,22 +41,14 @@ void loop() {
 }
 
 void startWatering() {
-  if (percentageHumididy < 18) {
+  pumpOff();
+  if (humidityPercentage < 18) {
     if (temp <= 25 && (ldrValue <= 890 && ldrValue >= 600)) {
-      pumpOn();
       timesToWater(2);
     }
     else if (temp > 25 && (ldrValue <= 890 && ldrValue >= 600)) {
-      pumpOn();
       timesToWater(3);
     }
-    else {
-      pumpOff();
-    }
-  }
-  else {
-    pumpOff();
-    digitalWrite(pumpPin, LOW);
   }
 }
 
@@ -67,17 +59,13 @@ void timesToWater(int number) {
     //turn led on/off
     turnLedOnOrOff();
 
-   if (percentageHumididy > 18) {
-      getTime();
+    if (humidityPercentage > 18) {
       pumpOff();
       continue;
     }
-    
+
     pumpOn();
-    
-    
     delay(2000);
-    
     pumpOff();
     delay(5000);
   }
@@ -91,12 +79,14 @@ void getLdrValue() {
 void getTempValue() {
   lmValue = analogRead(lmSensor);
   lmVoltage = (5.0 / 1023.0) * lmValue;
+  //1023 => 5
+  //analog => V
   temp = lmVoltage / .01; // Temp = (Vout/10mv)
 }
 
 void getHumidityValue() {
   moistureValue = analogRead(moistureSensor);
-  percentageHumididy = map(moistureValue, wet, dry, 0, 100);
+  humidityPercentage = map(moistureValue, wet, dry, 0, 100);
   delay(100);
 }
 
@@ -127,8 +117,11 @@ void getTime() {
   else if (ldrValue < 600) {
     lcd.print("Light");
   }
-  else if (ldrValue < 1023) {
+  else if (ldrValue <= 800) {
     lcd.print("Morning");
+  }
+  else if (ldrValue < 1023) {
+    lcd.print("Dark");
   }
 }
 
@@ -136,7 +129,7 @@ void getTime() {
 void pumpOn() {
   digitalWrite(pumpPin, HIGH);
   lcd.setCursor(7 , 1);
-  lcd.print(" ON");
+  lcd.print("ON ");
 }
 
 void pumpOff() {
